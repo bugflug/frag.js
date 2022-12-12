@@ -1,5 +1,4 @@
-//import { routes } from '/src/routes.js'
-import { el } from '/src/util.js'
+import { el } from './el.js'
 
 // props to mitch dev
 // https://www.youtube.com/watch?v=ZleShIpv5zQ
@@ -13,6 +12,7 @@ export let router = undefined
  */
 export class Router {
     container
+    view
     routes = {}
     page   = { unmount: () => {} }
 
@@ -34,12 +34,18 @@ export class Router {
     }
 
     /**
-     * mount the router to the specified target
-     * @param {string|Element} [target='<main>'] - target to mount the router to
+     * 
+     * @param {string|Element} container - container to house the router in
+     * @param {string|Element} view      - element to target for replacement
      */
-    async mount (target) {
-        this.container = (!!target) ? el.from(target) : el.from('main')
-        this.update(window.location.pathname)
+    target (container, view) {
+        this.container = el.from(container || 'main')
+        this.view      = el.range(view || 'view', this.container)
+        this.view.deleteContents()
+
+        this.container.id = 'router'
+
+        return this
     }
 
     /**
@@ -56,9 +62,12 @@ export class Router {
 
         // mount our new view
         new (this.routes[url] || this.routes['/404'])()
+            .target(this.container, this.view)
             .build()
-            .then(f => f.mount(this.container))
+            .then(f => f.mount())
             .then(f => this.page = f)
+
+        return this
     }
 
     /**
@@ -79,5 +88,7 @@ export class Router {
             // update our page
             this.update()
         }
+
+        return this
     }
 }

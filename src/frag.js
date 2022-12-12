@@ -1,11 +1,13 @@
-import { el } from '/src/util.js'
+import { el } from './el.js'
+import { Collection } from './collection.js'
 
 export const hook = {
-    build     () {},
-    mount     () {},
-    mounted   () {},
-    unmount   () {},
-    unmounted () {}
+    constructor () {},
+    build       () {},
+    mount       () {},
+    mounted     () {},
+    unmount     () {},
+    unmounted   () {}
 }
 
 /**
@@ -14,76 +16,90 @@ export const hook = {
  * @prop {string} path - path to pull HTML from
  */
 export class Frag {
+    // overridables
     path  = '/pages/404.html'
     hook  = hook
     frags = []
     
-    // @private
-    #frag   = undefined
-    #parent = undefined
-    #range  = undefined
+    // internal
+    frag     = undefined
+    parent   = undefined
+    old      = undefined
+    range    = undefined
+    children = undefined
 
     /**
      * build before using!
      */
     constructor () {
+        this.hook = { ...hook, ...this.hook }
     }
 
     /**
-     * build the component
+     * 
+     * @param {string|Element}       parent - parent element to target
+     * @param {string|Range|Element} target - tag to target
+     * @returns
+     */
+    target (parent, target) {
+        this.parent = el.from(parent)
+
+        this.range = el.range(target, parent)
+        this.old = this.range.extractContents()
+
+        return this
+    }
+
+    /**
+     * build the component(s)
      * @returns
      */
     async build () {
-        this.hook = { ...hook, ...this.hook }
-
-        // create our document fragment
-        // document fragments are very fast!
-        this.#frag = document
+        this.frag = document
             .createRange()
             .createContextualFragment(
                 await fetch(this.path)
                 .then(data => data.text()))
         
-        // @frags
-        for (let i in this.frags) { await this.frags[i].build() }
+        // @children
+        if (!!this.frags) this.children = []
+        for (let tag in this.frags) {
+            // using a collection lets us
+            // make sure every instance of
+            // the given tag is targeted
+            let c = await new Collection(this.frags[tag])
+                .target(this.frag, tag)
+                .build()
+            this.children.push(c)
+        }
 
         // @hook
         // seems like checking for variables existing
         // is necessary in async methods
-        if (this.hook.build) this.hook.build(this.#frag)
+        if (this.hook.build) this.hook.build(this)
         return this
     }
 
     /**
-     * append a frag to a parent
-     * @param {string|Element} parent - string identifier or document element
+     * append our frags to the parent target
      * @returns
      */
-    mount(parent) {
+    mount () {
         // @hook
-        if (this.hook.mount) this.hook.mount(parent, this.#frag)
+        if (this.hook.mount) this.hook.mount(this)
 
-        // @update
-        this.#parent = el.from(parent)
-        this.#range = document.createRange()
+        // @children
+        this.children.forEach(c => c.mount())
 
-        // @frags
-        this.frags.forEach(f => f.mount(this.#frag))
-
-        // get the length now before it gets cleared when appended
-        let dif = this.#frag.childNodes.length
-
-        // appending a document frag clears it by move
-        this.#parent.appendChild(this.#frag)
-        this.#range.setStartBefore(
-            this.#parent.childNodes[this.#parent.childNodes.length - dif], 0)
-        this.#range.setEndAfter(
-            this.#parent.childNodes[this.#parent.childNodes.length - 1], 0)
+        // this is it lmao
+        this.range.insertNode(this.frag)
 
         // @style
-        if (!!this.#parent.classList) this.#parent.classList.add('mounted')
+        if (!!this.parent.classList) this.parent.classList.add('mounted')
+
         // @hook
-        if (this.hook.mounted) this.hook.mounted(this.#parent)
+        if (this.hook.mounted) this.hook.mounted(this)
+        this.frag = undefined
         return this
     }
 
@@ -92,26 +108,25 @@ export class Frag {
      * @returns
      */
     unmount() {
-        if (!this.#range)  throw new Error('this frag has no range to unmount!')
-        if (!this.#parent) return false
+        if (!this.range)  throw new Error('this frag has no range to unmount!')
+        if (!this.parent) return false
 
         // @hook
-        if (this.hook.unmount) this.hook.unmount(this.#parent)
+        if (this.hook.unmount) this.hook.unmount(this)
 
-        // @frags
-        this.frags.forEach(f => f.unmount())
+        // @children
+        this.children.forEach(c => c.unmount())
 
         // @update
-        this.#frag = this.#range.extractContents()
-        this.#range.detach() ; this.#range = undefined
+        this.frag = this.range.extractContents()
+        this.range.insertNode(this.old)
 
         // @style
-        if (!!this.#parent.classList) this.#parent.classList.remove('mounted')
-
-        this.#parent = undefined
+        if (!!this.parent.classList) this.parent.classList.remove('mounted')
 
         // @hook
-        if (this.hook.unmounted) this.hook.unmounted(this.#frag)
+        if (this.hook.unmounted) this.hook.unmounted(this)
+        this.old = undefined
         return this
     }
 }

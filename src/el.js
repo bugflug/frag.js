@@ -12,6 +12,7 @@ export const el = {
         if (this.check(el)) return el
         if (!parent) parent = document
         if (typeof el === 'string') return parent.querySelector(el)
+        console.log(el)
         throw new Error('not a string nor an element!')
     },
 
@@ -36,5 +37,23 @@ export const el = {
         // modified!
         classList.add('modified')
         return el
+    },
+
+    /**
+     * return a range from the given string, element, or range from its parent
+     * @param {string|Element|Range} el                - string, Element, or Range
+     * @param {string|Element}       [parent=Document] - base node to query from
+     * @returns 
+     */
+    range (el, parent) {
+        if (el instanceof Range) return el
+
+        parent = this.from(parent)
+        el     = this.from(el, parent)
+
+        let r = document.createRange()
+        r.selectNode(el)
+
+        return r
     }
 }
