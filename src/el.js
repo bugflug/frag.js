@@ -12,8 +12,7 @@ export const el = {
         if (this.check(el)) return el
         if (!parent) parent = document
         if (typeof el === 'string') return parent.querySelector(el)
-        console.log(el)
-        throw new Error('not a string nor an element!')
+        throw new Error('not a string nor an element! for element ' + el + ' inside of parent ' + parent)
     },
 
     /**

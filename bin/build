@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+cd $(dirname $0)
+cd ..
+
+# rollup, compress, etc.
+npx rollup ./src/index.js \
+    --file ./bundle/index.js \
+    --format iife \
+    --name frag \
+    --validate \
+    --exports named
+
+npx terser ./bundle/index.js --compress --output ./bundle/index.js

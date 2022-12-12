@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "rollup": "^3.7.3",
+    "terser": "^5.16.1"
+  }
+}

@@ -44,7 +44,7 @@ export class Frag {
     target (parent, target) {
         this.parent = el.from(parent)
 
-        this.range = el.range(target, parent)
+        this.range = el.range(target, this.parent)
         this.old = this.range.extractContents()
 
         return this
