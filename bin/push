@@ -15,7 +15,7 @@ case $ans in
 esac
 
 # get the commit msg and push
-echo "" && read -p $'commit message for [bugflug.github.io/main]\n> ' ans && echo ""
+echo "" && read -p $'commit message for [frag.js/main]\n> ' ans && echo ""
 git add .
 git commit -m "${ans}"
 git push
