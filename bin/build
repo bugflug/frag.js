@@ -2,6 +2,7 @@
 
 cd $(dirname $0)
 cd ..
+echo "building minified/compressed files..."
 
 # rollup, compress, etc.
 npx rollup ./src/index.js \
